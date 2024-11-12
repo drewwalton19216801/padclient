@@ -1,5 +1,7 @@
 // main.go
-// Package main initializes the client, handles user input, and manages the main loop of the application using bubbletea TUI.
+// Package main initializes the client, handles user input, and manages the main loop of the application using Bubble Tea TUI.
+// The code now includes a viewport for displaying messages, allowing users to scroll through message history.
+
 package main
 
 import (
@@ -10,15 +12,17 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/drewwalton19216801/tailutils"
+	"github.com/charmbracelet/bubbles/textinput" // Text input component
+	"github.com/charmbracelet/bubbles/viewport"  // Viewport component for scrolling messages
+	tea "github.com/charmbracelet/bubbletea"     // Bubble Tea TUI framework
+	"github.com/drewwalton19216801/tailutils"    // Utilities for Tailscale
 )
 
 var (
 	address string // Server address
 )
 
+// Define message types used in the Bubble Tea program
 type errMsg struct{ error }
 type connectedMsg struct {
 	conn         net.Conn
@@ -40,14 +44,16 @@ type incomingMessage struct {
 	isBroadcast bool
 }
 
+// Model represents the application's state
 type model struct {
-	isOperator   bool
-	clientID     string
-	conn         net.Conn
-	input        textinput.Model
-	messages     []string
-	hashedSecret []byte
-	messageChan  chan tea.Msg
+	isOperator   bool            // Operator status
+	clientID     string          // Client identifier
+	conn         net.Conn        // Network connection
+	input        textinput.Model // Text input component for user commands
+	viewport     viewport.Model  // Viewport for displaying messages
+	messages     []string        // All messages to display in the viewport
+	hashedSecret []byte          // Hashed secret for AES encryption
+	messageChan  chan tea.Msg    // Channel for incoming messages from the server
 }
 
 func main() {
@@ -74,6 +80,7 @@ func main() {
 		clientID: clientID,
 	}
 
+	// Initialize the Bubble Tea program with the model
 	p := tea.NewProgram(m)
 	if err := p.Start(); err != nil {
 		fmt.Printf("Error: %v\n", err)
@@ -81,85 +88,122 @@ func main() {
 	}
 }
 
+// Init initializes the model and starts the connection to the server
 func (m *model) Init() tea.Cmd {
+	// Initialize the text input component
 	m.input = textinput.New()
 	m.input.Placeholder = "Type a command"
-	m.input.Focus()
 	m.input.CharLimit = 256
 	m.input.Width = 50
+	m.updatePrompt() // Set the initial prompt with client ID and operator status
+	m.input.Focus()
+
+	// Initialize the viewport for displaying messages
+	m.viewport = viewport.New(80, 20) // Width and Height of the viewport
+	m.viewport.YPosition = 0
+	m.viewport.HighPerformanceRendering = false      // Set to true if flickering occurs
+	m.viewport.SetContent("Connecting to server...") // Initial content
+
 	return tea.Batch(
 		connectToServer(m.clientID),
-		textinput.Blink,
+		textinput.Blink, // Start blinking cursor
 	)
 }
 
+// Update handles incoming events (keyboard input, server messages, etc.)
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
-	switch msg := msg.(type) { // Corrected type switch
+	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		// Handle key presses for input and viewport scrolling
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
+			// Exit the program on Ctrl+C or Esc
 			if m.conn != nil {
 				m.conn.Close()
 			}
 			return m, tea.Quit
 		case tea.KeyEnter:
+			// Handle command input when Enter is pressed
 			input := strings.TrimSpace(m.input.Value())
 			m.input.SetValue("")
 			return m.handleInput(input)
+		case tea.KeyUp, tea.KeyPgUp, tea.KeyCtrlU:
+			// Scroll viewport up
+			m.viewport.LineUp(1)
+		case tea.KeyDown, tea.KeyPgDown, tea.KeyCtrlD:
+			// Scroll viewport down
+			m.viewport.LineDown(1)
+		case tea.KeyHome:
+			// Go to top of the viewport
+			m.viewport.GotoTop()
+		case tea.KeyEnd:
+			// Go to bottom of the viewport
+			m.viewport.GotoBottom()
 		default:
+			// Update text input component
 			m.input, cmd = m.input.Update(msg)
-			return m, cmd
 		}
+		return m, cmd
 	case connectedMsg:
+		// Handle successful connection to the server
 		m.conn = msg.conn
 		m.hashedSecret = msg.hashedSecret
 		m.isOperator = msg.isOperator
+		m.updatePrompt() // Update the prompt to reflect operator status
 		m.messageChan = make(chan tea.Msg)
 		go readMessages(m.conn, m.hashedSecret, m.messageChan)
-		m.messages = append(m.messages, "Connected to the server. Type your commands below:")
+		m.appendMessage("Connected to the server. Type your commands below:")
 		if m.isOperator {
-			m.messages = append(m.messages, "You are the server operator. Type HELP to see available commands.")
+			m.appendMessage("You are the server operator. Type HELP to see available commands.")
 		} else {
-			m.messages = append(m.messages, "Type HELP to see available commands.")
+			m.appendMessage("Type HELP to see available commands.")
 		}
 		return m, waitForServerMessage(m.messageChan)
 	case serverMsg:
-		m.messages = append(m.messages, msg.content)
+		// Handle general messages from the server
+		m.appendMessage(msg.content)
 		return m, waitForServerMessage(m.messageChan)
 	case operatorMsg:
+		// Handle operator status change
 		m.isOperator = true
-		m.messages = append(m.messages, msg.content)
+		m.updatePrompt() // Update the prompt since operator status changed
+		m.appendMessage(msg.content)
 		return m, waitForServerMessage(m.messageChan)
 	case incomingMessage:
+		// Handle incoming messages from other clients
 		var prefix string
 		if msg.isBroadcast {
 			prefix = fmt.Sprintf("Broadcast from %s: ", msg.senderID)
 		} else {
 			prefix = fmt.Sprintf("Message from %s: ", msg.senderID)
 		}
-		m.messages = append(m.messages, prefix+msg.content)
+		m.appendMessage(prefix + msg.content)
 		return m, waitForServerMessage(m.messageChan)
 	case kickedMsg:
-		m.messages = append(m.messages, "You have been kicked from the server by the operator.")
+		// Handle being kicked by the operator
+		m.appendMessage("You have been kicked from the server by the operator.")
 		if m.conn != nil {
 			m.conn.Close()
 		}
 		return m, tea.Quit
 	case bannedMsg:
-		m.messages = append(m.messages, "You have been banned from the server by the operator.")
+		// Handle being banned by the operator
+		m.appendMessage("You have been banned from the server by the operator.")
 		if m.conn != nil {
 			m.conn.Close()
 		}
 		return m, tea.Quit
 	case disconnectMsg:
-		m.messages = append(m.messages, "Disconnected from server.")
+		// Handle disconnection from the server
+		m.appendMessage("Disconnected from server.")
 		if m.conn != nil {
 			m.conn.Close()
 		}
 		return m, tea.Quit
 	case errMsg:
-		m.messages = append(m.messages, fmt.Sprintf("Error: %v", msg.error))
+		// Handle errors
+		m.appendMessage(fmt.Sprintf("Error: %v", msg.error))
 		if m.conn != nil {
 			m.conn.Close()
 		}
@@ -169,17 +213,16 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
+// View renders the UI
 func (m *model) View() string {
-	s := strings.Builder{}
-	for _, msg := range m.messages {
-		s.WriteString(msg + "\n")
-	}
-	s.WriteString("\n")
-	s.WriteString(m.input.View())
-	s.WriteString("\n")
-	return s.String()
+	return fmt.Sprintf(
+		"%s\n%s",
+		m.viewport.View(), // Render the viewport above
+		m.input.View(),    // Render the input field below
+	)
 }
 
+// handleInput processes the user input commands
 func (m *model) handleInput(input string) (tea.Model, tea.Cmd) {
 	parts := strings.Fields(input)
 	if len(parts) == 0 {
@@ -188,8 +231,9 @@ func (m *model) handleInput(input string) (tea.Model, tea.Cmd) {
 
 	switch parts[0] {
 	case "SEND":
+		// Handle the SEND command to send messages
 		if len(parts) < 3 {
-			m.messages = append(m.messages, "Invalid SEND command. Use: SEND <RecipientID|ALL> <Message>")
+			m.appendMessage("Invalid SEND command. Use: SEND <RecipientID|ALL> <Message>")
 			return m, nil
 		}
 		recipientID := parts[1]
@@ -198,7 +242,7 @@ func (m *model) handleInput(input string) (tea.Model, tea.Cmd) {
 			// Encrypt the message using AES with the shared secret
 			encryptedData, err := encryptAES(m.hashedSecret, []byte(messageText))
 			if err != nil {
-				m.messages = append(m.messages, fmt.Sprintf("Error encrypting message: %v", err))
+				m.appendMessage(fmt.Sprintf("Error encrypting message: %v", err))
 				return m, nil
 			}
 			// Encode the encrypted data in hex
@@ -210,7 +254,7 @@ func (m *model) handleInput(input string) (tea.Model, tea.Cmd) {
 			key := make([]byte, len(messageText))
 			_, err := rand.Read(key)
 			if err != nil {
-				m.messages = append(m.messages, fmt.Sprintf("Error generating OTP key: %v", err))
+				m.appendMessage(fmt.Sprintf("Error generating OTP key: %v", err))
 				return m, nil
 			}
 
@@ -228,12 +272,14 @@ func (m *model) handleInput(input string) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case "HELP":
-		m.messages = append(m.messages, "Available commands:")
-		m.messages = append(m.messages, "SEND <RecipientID|ALL> <Message> - Send a message")
-		m.messages = append(m.messages, "HELP - Print this help text")
-		m.messages = append(m.messages, "EXIT - Exit the program")
+		// Display help text
+		m.appendMessage("Available commands:")
+		m.appendMessage("SEND <RecipientID|ALL> <Message> - Send a message")
+		m.appendMessage("HELP - Print this help text")
+		m.appendMessage("EXIT - Exit the program")
 		return m, nil
 	case "EXIT":
+		// Exit the client program
 		fmt.Fprintf(m.conn, "EXIT\n")
 		if m.conn != nil {
 			m.conn.Close()
@@ -246,6 +292,24 @@ func (m *model) handleInput(input string) (tea.Model, tea.Cmd) {
 	}
 }
 
+// updatePrompt updates the prompt with the client ID and operator status
+func (m *model) updatePrompt() {
+	if m.isOperator {
+		m.input.Prompt = fmt.Sprintf("%s (op) > ", m.clientID)
+	} else {
+		m.input.Prompt = fmt.Sprintf("%s > ", m.clientID)
+	}
+}
+
+// appendMessage adds a message to the viewport and updates the content
+func (m *model) appendMessage(msg string) {
+	m.messages = append(m.messages, msg)
+	content := strings.Join(m.messages, "\n")
+	m.viewport.SetContent(content)
+	m.viewport.GotoBottom() // Scroll to the bottom to show the new message
+}
+
+// connectToServer establishes the connection and performs client setup
 func connectToServer(clientID string) tea.Cmd {
 	return func() tea.Msg {
 		conn, err := net.Dial("tcp", address)
@@ -260,6 +324,7 @@ func connectToServer(clientID string) tea.Cmd {
 	}
 }
 
+// waitForServerMessage waits for a message from the server
 func waitForServerMessage(messageChan <-chan tea.Msg) tea.Cmd {
 	return func() tea.Msg {
 		return <-messageChan
