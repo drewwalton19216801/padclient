@@ -11,6 +11,8 @@ A secure messaging client that communicates over Tailscale, using the Bubble Tea
 - [Installation](#installation)
 - [Usage](#usage)
 - [Commands](#commands)
+- [Command History](#command-history)
+- [Key Shortcut Actions](#key-shortcut-actions)
 - [Encryption Details](#encryption-details)
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
