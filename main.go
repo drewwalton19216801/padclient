@@ -1,6 +1,6 @@
 // main.go
 // Package main initializes the client, handles user input, and manages the main loop of the application using Bubble Tea TUI.
-// The code now includes a viewport for displaying messages, allowing users to scroll through message history.
+// This version includes a command history feature, allowing users to navigate through previous commands using Up/Down arrows.
 
 package main
 
@@ -52,6 +52,8 @@ type model struct {
 	input        textinput.Model // Text input component for user commands
 	viewport     viewport.Model  // Viewport for displaying messages
 	messages     []string        // All messages to display in the viewport
+	history      []string        // Command history
+	historyIndex int             // Current index in the history (-1 means not navigating)
 	hashedSecret []byte          // Hashed secret for AES encryption
 	messageChan  chan tea.Msg    // Channel for incoming messages from the server
 }
@@ -77,7 +79,8 @@ func main() {
 	}
 
 	m := &model{
-		clientID: clientID,
+		clientID:     clientID,
+		historyIndex: -1, // Initialize history index
 	}
 
 	// Initialize the Bubble Tea program with the model
@@ -128,10 +131,33 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			input := strings.TrimSpace(m.input.Value())
 			m.input.SetValue("")
 			return m.handleInput(input)
-		case tea.KeyUp, tea.KeyPgUp, tea.KeyCtrlU:
+		case tea.KeyUp:
+			// Navigate command history backward
+			if len(m.history) > 0 {
+				if m.historyIndex == -1 {
+					m.historyIndex = len(m.history) - 1
+				} else if m.historyIndex > 0 {
+					m.historyIndex--
+				}
+				m.input.SetValue(m.history[m.historyIndex])
+				m.input.CursorEnd()
+			}
+		case tea.KeyDown:
+			// Navigate command history forward
+			if len(m.history) > 0 && m.historyIndex != -1 {
+				if m.historyIndex < len(m.history)-1 {
+					m.historyIndex++
+					m.input.SetValue(m.history[m.historyIndex])
+				} else {
+					m.historyIndex = -1
+					m.input.SetValue("")
+				}
+				m.input.CursorEnd()
+			}
+		case tea.KeyPgUp, tea.KeyCtrlU:
 			// Scroll viewport up
 			m.viewport.LineUp(1)
-		case tea.KeyDown, tea.KeyPgDown, tea.KeyCtrlD:
+		case tea.KeyPgDown, tea.KeyCtrlD:
 			// Scroll viewport down
 			m.viewport.LineDown(1)
 		case tea.KeyHome:
@@ -143,6 +169,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		default:
 			// Update text input component
 			m.input, cmd = m.input.Update(msg)
+			// Reset history index when typing a new command
+			if msg.String() != "" && msg.Runes != nil {
+				m.historyIndex = -1
+			}
 		}
 		return m, cmd
 	case connectedMsg:
@@ -226,8 +256,16 @@ func (m *model) View() string {
 func (m *model) handleInput(input string) (tea.Model, tea.Cmd) {
 	parts := strings.Fields(input)
 	if len(parts) == 0 {
+		// Reset history index if the input is empty
+		m.historyIndex = -1
 		return m, nil
 	}
+
+	// Add the command to history if it's not empty
+	if input != "" {
+		m.history = append(m.history, input)
+	}
+	m.historyIndex = -1 // Reset history index
 
 	switch parts[0] {
 	case "SEND":
