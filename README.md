@@ -94,6 +94,113 @@ If you are the server operator, you may have access to additional commands (cons
 - `UNBAN <ClientID>`: Remove a ban on a client.
 - `LISTBANS`: List all banned clients.
 
+## Command History
+
+The client application includes a command history feature that allows you to navigate through your previously entered commands, similar to a typical terminal experience. This feature enhances productivity by enabling you to quickly reuse or edit past commands without retyping them entirely.
+
+### How to Use Command History
+
+- **Navigate Backward in History**:
+  - **Up Arrow Key (`↑`)**: Press the Up arrow key to scroll backward through your command history. Each press will display the previous command in the input field.
+- **Navigate Forward in History**:
+  - **Down Arrow Key (`↓`)**: After scrolling backward, you can press the Down arrow key to move forward through the history. This allows you to return to more recent commands or to an empty input field.
+
+### Editing Commands from History
+
+- Once a previous command is displayed in the input field, you can edit it before executing.
+- This is useful for sending similar messages or commands with slight modifications.
+
+### Example
+
+1. Type a command:
+
+   ```
+   SEND ALL Hello, everyone!
+   ```
+
+2. Press `Enter` to execute.
+3. To resend the same message or modify it:
+
+   - Press the Up arrow key to retrieve the command.
+   - Edit the message if desired (e.g., change "Hello" to "Hi").
+   - Press `Enter` to send the modified command.
+
+## Key Shortcut Actions
+
+The client application supports several key shortcuts to improve navigation and efficiency. Below is a list of available key shortcuts and their actions.
+
+### Input and Command History Navigation
+
+- **Up Arrow Key (`↑`)**:
+  - **Action**: Navigate backward through the command history.
+  - **Usage**: Retrieve previous commands to reuse or edit them.
+- **Down Arrow Key (`↓`)**:
+  - **Action**: Navigate forward through the command history.
+  - **Usage**: Move toward more recent commands or return to an empty input field.
+
+### Message Viewport Scrolling
+
+- **Scroll Up**:
+  - **Keys**:
+    - **Page Up (`PgUp`)**
+    - **Control + U (`Ctrl+U`)**
+  - **Action**: Scroll up through the message history in the viewport.
+  - **Usage**: View earlier messages that have scrolled off the screen.
+- **Scroll Down**:
+  - **Keys**:
+    - **Page Down (`PgDn`)**
+    - **Control + D (`Ctrl+D`)**
+  - **Action**: Scroll down through the message history.
+  - **Usage**: Return to more recent messages after scrolling up.
+- **Jump to Top**:
+  - **Key**:
+    - **Home**
+  - **Action**: Jump to the very top of the message history.
+  - **Usage**: Quickly view the earliest messages in the session.
+- **Jump to Bottom**:
+  - **Key**:
+    - **End**
+  - **Action**: Jump to the bottom of the message history.
+  - **Usage**: Return to the most recent messages.
+
+### General Shortcuts
+
+- **Submit Command**:
+  - **Key**:
+    - **Enter**
+  - **Action**: Submit the command or message typed in the input field.
+  - **Usage**: Execute commands like `SEND`, `HELP`, or `EXIT`.
+- **Exit Application**:
+  - **Keys**:
+    - **Control + C (`Ctrl+C`)**
+    - **Escape (`Esc`)**
+  - **Action**: Exit the client application gracefully.
+  - **Usage**: Close the application when you are done or need to disconnect.
+
+### Notes
+
+- **Typing New Commands**:
+  - When you start typing a new command (i.e., any printable character), the command history navigation resets. This means that pressing the Up arrow key will start from the most recent command again.
+- **Editing Input**:
+  - Standard text editing keys work within the input field (e.g., Left/Right arrows to move the cursor, Backspace to delete characters).
+
+### Example Usage of Key Shortcuts
+
+- **Scrolling Messages**:
+  - To read an earlier message:
+    - Press `Ctrl+U` or `Page Up` to scroll up.
+    - Continue pressing to scroll further back.
+  - To return to the latest messages:
+    - Press `Ctrl+D` or `Page Down` to scroll down.
+    - Press `End` to jump directly to the bottom.
+
+- **Navigating Command History**:
+  - After executing several commands:
+    - Press the Up arrow key to access the last command.
+    - Press Up again to go further back.
+    - Press Down to navigate forward in the history.
+    - Edit the retrieved command if needed before executing.
+
 ## Encryption Details
 
 - **Broadcast Messages**: Encrypted using AES with a shared secret derived from ECDH key exchange.
