@@ -80,6 +80,8 @@ Once connected, you can use the following commands within the client:
 
 - `SEND <RecipientID|ALL> <Message>`: Send a message to a specific client or broadcast to all clients.
 - `HELP`: Display help information about available commands.
+- `LIST`: List all connected clients.
+- `SERVERHELP`: Display help information about the available server commands.
 - `EXIT`: Exit the client program.
 
 ### Operator Commands
@@ -89,7 +91,7 @@ If you are the server operator, you may have access to additional commands (cons
 - `KICK <ClientID>`: Remove a client from the server.
 - `BAN <ClientID>`: Ban a client from the server.
 - `UNBAN <ClientID>`: Remove a ban on a client.
-- `LIST`: List all connected clients.
+- `LISTBANS`: List all banned clients.
 
 ## Encryption Details
 
