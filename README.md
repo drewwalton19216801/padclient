@@ -1,6 +1,6 @@
 # Padserve Client
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Go](https://github.com/drewwalton19216801/padclient/actions/workflows/go.yml/badge.svg)](https://github.com/drewwalton19216801/padclient/actions/workflows/go.yml)
 
 A secure messaging client that communicates over Tailscale, using the Bubble Tea TUI framework. This client is designed to work with the [Padserve secure messaging server](https://github.com/drewwalton19216801/padserve) and provides a terminal-based user interface for sending and receiving encrypted messages.
 
