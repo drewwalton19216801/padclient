@@ -24,6 +24,7 @@ A secure messaging client that communicates over Tailscale, using the Bubble Tea
 - Terminal-based user interface built with Bubble Tea.
 - Operator support with special commands.
 - Message broadcasting to all connected clients.
+- Cross-platform support across macOS, Linux, Windows, and (experimentally) FreeBSD.
 
 ## Prerequisites
 
