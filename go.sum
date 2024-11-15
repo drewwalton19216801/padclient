@@ -12,8 +12,8 @@ github.com/charmbracelet/x/ansi v0.4.5 h1:LqK4vwBNaXw2AyGIICa5/29Sbdq58GbGdFngSe
 github.com/charmbracelet/x/ansi v0.4.5/go.mod h1:dk73KoMTT5AX5BsX0KrqhsTqAnhZZoCBjs7dGWp4Ktw=
 github.com/charmbracelet/x/term v0.2.1 h1:AQeHeLZ1OqSXhrAWpYUtZyX1T3zVxfpZuEQMIQaGIAQ=
 github.com/charmbracelet/x/term v0.2.1/go.mod h1:oQ4enTYFV7QN4m0i9mzHrViD7TQKvNEEkHUMCmsxdUg=
-github.com/drewwalton19216801/tailutils v0.2.0 h1:HWdw3VSgJrC7shwfhd2qSE4Jp00C/y1kgPkhR72zDOM=
-github.com/drewwalton19216801/tailutils v0.2.0/go.mod h1:5O+Sy7YFSc02x3FcQIvjPZ2/BLlkEMuq0EiEiEOULJQ=
+github.com/drewwalton19216801/tailutils v0.2.4 h1:ZBrIKfzARmiz0Uo/yY3t/nPEQQ8mir8/m71Uy4IkpGQ=
+github.com/drewwalton19216801/tailutils v0.2.4/go.mod h1:AAg+1x4BXZwkT/4g2z2SLS/Iwld7uQZx4CCunXS8f2w=
 github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f h1:Y/CXytFA4m6baUTXGLOoWe4PQhGxaX0KpnayAqC48p4=
 github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f/go.mod h1:vw97MGsxSvLiUE2X8qFplwetxpGLQrlU1Q9AUEIzCaM=
 github.com/lucasb-eyer/go-colorful v1.2.0 h1:1nnpGOrhyZZuNyfu1QjKiUICQ74+3FNCN69Aj6K7nkY=
